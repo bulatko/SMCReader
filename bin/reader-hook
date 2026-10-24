@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+// Alias kept for existing installs: same as bin/smcreader-hook.
+require('./smcreader-hook');

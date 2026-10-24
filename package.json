@@ -1,0 +1,64 @@
+{
+  "name": "smcreader",
+  "version": "0.1.0",
+  "description": "SMC Reader (Save My Context Reader): pull-model reading of large tool outputs for Claude Code. A PostToolUse hook spills big outputs to disk and leaves a short pointer; an MCP server returns only the lines or answers the model asks for.",
+  "license": "MIT",
+  "author": "bulatko",
+  "homepage": "https://github.com/bulatko/SMCReader#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bulatko/SMCReader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bulatko/SMCReader/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "mcp",
+    "model-context-protocol",
+    "context",
+    "context-window",
+    "hooks",
+    "agents",
+    "llm"
+  ],
+  "main": "lib/index.js",
+  "bin": {
+    "smcreader-hook": "bin/smcreader-hook",
+    "smcreader-mcp": "bin/smcreader-mcp",
+    "reader-hook": "bin/reader-hook",
+    "reader-mcp": "bin/reader-mcp"
+  },
+  "files": [
+    "lib/",
+    "bin/",
+    ".claude-plugin/",
+    "hooks/",
+    ".mcp.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "jest",
+    "e2e": "sh e2e/claude-code.sh",
+    "e2e:plugin": "sh e2e/plugin.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ]
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.293",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

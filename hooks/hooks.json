@@ -1,0 +1,13 @@
+{
+  "description": "SMC Reader: replace large Bash/WebFetch outputs with a [READER ctx_...] pointer",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|WebFetch",
+        "hooks": [
+          { "type": "command", "command": "READER_TOOL_PREFIX=mcp__plugin_smcreader_smcreader__ node \"${CLAUDE_PLUGIN_ROOT}/bin/smcreader-hook\"" }
+        ]
+      }
+    ]
+  }
+}

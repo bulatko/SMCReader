@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "smcreader",
+  "description": "SMC Reader (Save My Context Reader) for Claude Code",
+  "owner": { "name": "bulatko" },
+  "plugins": [
+    {
+      "name": "smcreader",
+      "description": "Large tool outputs go to disk behind a short pointer; the model pulls only the lines it needs.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

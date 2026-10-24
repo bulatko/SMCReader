@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+// Claude Code command hook (PostToolUse; PreToolUse — Read guard). Fail-open: always exits 0.
+'use strict';
+let main;
+try { ({ main } = require('../lib/hook-command')); } catch (_) { process.exit(0); }
+main().then(() => process.exit(0), () => process.exit(0));

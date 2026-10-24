@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # e2e/claude-code.sh and e2e/plugin.sh are NOT run here: they drive a real
+      # `claude -p --model haiku` session, which needs an installed Claude Code CLI and a
+      # logged-in Anthropic account (and costs ~$0.03-0.04 per run). Run them locally.
+      - name: Package contents (no tests/ or e2e/ in the tarball)
+        run: |
+          npm pack --dry-run --json > pack.json
+          node -e 'const f=require("./pack.json")[0].files.map(x=>x.path); const bad=f.filter(p=>/^(tests|e2e)\//.test(p)); if(bad.length){console.error("unexpected in package:",bad);process.exit(1)} for (const need of [".claude-plugin/plugin.json","hooks/hooks.json",".mcp.json","bin/smcreader-hook","bin/smcreader-mcp","LICENSE"]) if(!f.includes(need)){console.error("missing in package:",need);process.exit(1)}'

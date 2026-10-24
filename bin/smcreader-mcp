@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+// Reader stdio MCP server. stdout carries the protocol, so all logging goes to stderr.
+'use strict';
+const { createReaderStore } = require('../lib/reader-store');
+const { runStdio } = require('../lib/stdio-mcp');
+const { loadConfig } = require('../lib/config');
+
+const cfg = loadConfig();
+const log = (msg) => { try { process.stderr.write(`${msg}\n`); } catch (_) { /* */ } };
+const store = createReaderStore({ dir: cfg.dir, log });
+runStdio({ store, owner: cfg.owner, askFormat: cfg.askFormat }).catch((e) => {
+  log(`[smcreader-mcp] fatal: ${e && e.stack || e}`);
+  process.exit(1);
+});
