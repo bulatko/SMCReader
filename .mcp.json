@@ -1,7 +1,7 @@
 {
   "smcreader": {
     "type": "stdio",
-    "command": "node",
-    "args": ["${CLAUDE_PLUGIN_ROOT}/bin/smcreader-mcp"]
+    "command": "npx",
+    "args": ["-y", "--omit=optional", "--package=smcreader@0.1.1", "smcreader-mcp"]
   }
 }

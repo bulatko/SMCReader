@@ -1,10 +1,14 @@
 #!/bin/sh
 # End-to-end test of smcreader loaded as a Claude Code PLUGIN. Exit code is the verdict.
 #
-#   sh e2e/plugin.sh                          — claude --plugin-dir <repo>: hook + MCP server
+#   sh e2e/plugin.sh                          — claude --plugin-dir <copy>: hook + MCP server
 #                                               come from the plugin only (no --settings, no --mcp-config)
 #   READER_E2E_NO_PLUGIN=1 sh e2e/plugin.sh   — the same run WITHOUT --plugin-dir
 #                                               (negative control: must fail on check 1)
+#
+# The plugin is a copy of the tracked files WITHOUT node_modules — what a marketplace install gets.
+# Its .mcp.json starts the MCP server via npx; the package is the working tree packed with `npm pack`
+# (READER_E2E_PACKAGE=registry keeps the version pinned in .mcp.json, i.e. the published one).
 #
 # Same scenario and verdict as e2e/claude-code.sh (shared e2e/check-stream.js): the model runs
 # Bash `seq 1 3000`, then fetches line 2999 through the plugin's reader tool. Verdict from stream-json:
@@ -34,7 +38,19 @@ if [ -n "$NO_PLUGIN" ]; then
   set --
 else
   MODE="plugin"
-  set -- --plugin-dir "$REPO"
+  PLUGIN="$TMP/plugin"
+  mkdir -p "$PLUGIN"
+  ( cd "$REPO" && git ls-files -z | xargs -0 tar cf - ) | tar xf - -C "$PLUGIN" || { echo "E2E-FAIL: plugin copy"; exit 1; }
+  if [ "${READER_E2E_PACKAGE:-}" != "registry" ]; then
+    TGZ=$(cd "$REPO" && npm pack --json --pack-destination "$TMP" 2>/dev/null \
+      | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s)[0].filename))') \
+      || { echo "E2E-FAIL: npm pack"; exit 1; }
+    node -e 'const fs=require("fs"),[f,tgz]=process.argv.slice(1);const m=JSON.parse(fs.readFileSync(f,"utf8"));
+      m.smcreader.args=m.smcreader.args.map(a=>a.startsWith("--package=")?"--package="+tgz:a);fs.writeFileSync(f,JSON.stringify(m,null,2))' \
+      "$PLUGIN/.mcp.json" "$TMP/$TGZ" || { echo "E2E-FAIL: .mcp.json rewrite"; exit 1; }
+  fi
+  echo "plugin .mcp.json args: $(node -p 'JSON.stringify(require(process.argv[1]).smcreader.args)' "$PLUGIN/.mcp.json")"
+  set -- --plugin-dir "$PLUGIN"
 fi
 
 PROMPT="Do exactly two steps, nothing else. Step 1: run the Bash command \`seq 1 3000\`. Step 2: its output will be replaced by a pointer like \"[READER ctx_XXXXXXXX] ...\"; call the tool ${PREFIX}reader_peek with that id, start_line 2999, end_line 2999, and reply with the text of that line. If there is no pointer in the Bash output, reply NO-POINTER and stop."

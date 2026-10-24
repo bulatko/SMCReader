@@ -19,10 +19,11 @@ short pointer. The model then pulls only what it needs — exact lines, or an an
 
 ## Quick start
 
-```sh
-git clone https://github.com/bulatko/SMCReader ~/smcreader
-cd ~/smcreader && npm install --omit=dev
-claude --plugin-dir ~/smcreader
+In Claude Code (Node.js ≥ 20 on `PATH`):
+
+```
+/plugin marketplace add bulatko/SMCReader
+/plugin install smcreader@smcreader
 ```
 
 That's it — no `settings.json` or `--mcp-config` edits. Run something noisy and the model gets this
@@ -92,17 +93,16 @@ source of truth (open-document limit, LRU eviction, 48 h expiry since last use).
 
 ## Install
 
-**As a plugin (recommended)** — see [Quick start](#quick-start). The repository is also a plugin
-marketplace, so you can install it permanently:
-
-```
-/plugin marketplace add bulatko/SMCReader
-/plugin install smcreader@smcreader
-```
-
-The plugin's MCP server needs its npm dependencies in the plugin directory
-(`npm install --omit=dev`); the hook itself has none. Loaded as a plugin, the tools are named
+**As a plugin (recommended)** — see [Quick start](#quick-start); the repository is its own plugin
+marketplace. The hook has no dependencies and runs from the plugin directory. The MCP server is
+started with `npx -y --omit=optional --package=smcreader@<plugin version> smcreader-mcp`: the first
+start downloads the npm package once (~40 MB with dependencies, ~60 MB on disk). `--omit=optional`
+skips the Agent SDK's bundled Claude Code binaries (~280 MB per platform variant); `reader_ask` runs your own `claude`
+from `PATH` instead (or `READER_CLAUDE_EXECUTABLE`). Loaded as a plugin, the tools are named
 `mcp__plugin_smcreader_smcreader__reader_*`, and the hook writes these names into the pointer.
+
+For a one-off session from a checkout: `git clone https://github.com/bulatko/SMCReader ~/smcreader`
+and `claude --plugin-dir ~/smcreader`.
 
 <details>
 <summary><b>Manual setup</b> (hook in <code>settings.json</code> + <code>claude mcp add</code>)</summary>
@@ -163,6 +163,7 @@ enable it.
 | `READER_OWNER` | — | server (hook: fallback) | owner the server acts as; unset = sees all documents |
 | `READER_ASK_FORMAT` | `lines` | server | default `reader_ask` format: `lines` (verbatim lines + short note) or `prose` |
 | `READER_WORK_DIR` | `$TMPDIR/reader-work` | server | cwd of the Haiku reader sessions (their transcripts land there) |
+| `READER_CLAUDE_EXECUTABLE` | the Agent SDK's bundled binary if installed, else `claude` on `PATH` | server | Claude Code binary that runs the Haiku reader |
 
 **Owners.** The hook stamps each document with the `session_id` from its input (a subagent's
 document gets `<session>/agent:<agent_id>`). The open-document limit (10) and LRU eviction are per
@@ -177,7 +178,7 @@ reading by id is never restricted.
 | path | role |
 |---|---|
 | `lib/reader-store.js` | document store over a directory (`ctx_<8hex>.txt` + `.meta.json`), owners, LRU limit, TTL sweep |
-| `lib/reader-model.js` | Haiku reader via Agent SDK `query()`; answer formats `prose` / `lines`; `createRunQuery({cwd, settings, cleanupPeriodDays})` for embedding hosts |
+| `lib/reader-model.js` | Haiku reader via Agent SDK `query()`; answer formats `prose` / `lines`; `createRunQuery({cwd, settings, cleanupPeriodDays, executable})` for embedding hosts |
 | `lib/reader-tools.js` | transport-free tool definitions `reader_open/ask/peek/close/list` |
 | `lib/intercept-hook.js` | interception: extract text, mirror the tool's output shape, build the pointer |
 | `lib/read-guard.js` | optional `PreToolUse` guard for big `Read`s |
@@ -191,9 +192,16 @@ reading by id is never restricted.
 npm test                                         # unit + cross-process (spawns the real bin/ scripts)
 sh e2e/claude-code.sh                            # real Claude Code: hook via --settings, server via --mcp-config
 READER_E2E_NO_HOOK=1 sh e2e/claude-code.sh       # negative control: no hook — must fail
-sh e2e/plugin.sh                                 # real Claude Code, everything from --plugin-dir
+sh e2e/plugin.sh                                 # real Claude Code, everything from the plugin
 READER_E2E_NO_PLUGIN=1 sh e2e/plugin.sh          # negative control: no --plugin-dir — must fail
+READER_E2E_PACKAGE=registry sh e2e/plugin.sh     # the published npm version instead of `npm pack`
 ```
+
+`e2e/plugin.sh` loads a copy of the tracked files without `node_modules` (what a marketplace
+install gets) and points its `.mcp.json` at `npm pack` of the working tree.
+
+**Releasing.** A marketplace install takes the plugin from the default branch, and its `.mcp.json`
+pins `smcreader@<version>` — so publish that version to npm *before* pushing the version bump.
 
 The e2e verdict comes from `--output-format stream-json`, i.e. from what the model actually
 received, not from what it said: (1) the Bash `tool_result` contains `[READER ctx_` and not
@@ -209,7 +217,8 @@ received, not from what it said: (1) the Bash `tool_result` contains `[READER ct
 - Supported output shapes: string, `{stdout,…}` (Bash), `{content:[…]}` (MCP), `{output}`,
   `{file:{content}}` (Read), arrays of content blocks. Unknown shape → passed through untouched.
 - `Read` is not intercepted by default — `Edit` needs exact bytes. Use the read guard instead.
-- `reader_ask` needs Claude Code credentials (Agent SDK, model Haiku). Documents above 700 KB can
+- `reader_ask` needs Claude Code credentials and a `claude` binary (Agent SDK, model Haiku);
+  `reader_open` / `reader_peek` / `reader_list` work without them. Documents above 700 KB can
   only be peeked; above 5 MB `reader_open` refuses them.
 - The plugin's hook sets an environment variable inline (`VAR=… node …`), which needs a POSIX
   shell; Windows is not tested.
