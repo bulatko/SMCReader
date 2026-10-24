@@ -201,7 +201,10 @@ READER_E2E_PACKAGE=registry sh e2e/plugin.sh     # the published npm version ins
 install gets) and points its `.mcp.json` at `npm pack` of the working tree.
 
 **Releasing.** A marketplace install takes the plugin from the default branch, and its `.mcp.json`
-pins `smcreader@<version>` — so publish that version to npm *before* pushing the version bump.
+pins `smcreader@<version>` — so the version must be on npm *before* the bump reaches that branch.
+Bump the version in `package.json`, `.claude-plugin/plugin.json` and `.mcp.json` (`npm test` checks
+they agree), commit, push **only the tag** `v<version>`; the `Release` workflow publishes to npm
+(trusted publishing, with provenance). Then push the branch.
 
 The e2e verdict comes from `--output-format stream-json`, i.e. from what the model actually
 received, not from what it said: (1) the Bash `tool_result` contains `[READER ctx_` and not

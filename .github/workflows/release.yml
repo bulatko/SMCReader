@@ -1,0 +1,35 @@
+name: Release
+
+# Publishes to npm on a version tag via npm trusted publishing (OIDC): no npm token in the repo,
+# and the package gets a provenance attestation. Push the tag BEFORE the version bump reaches the
+# default branch: a marketplace install takes the plugin from there, and its .mcp.json pins
+# smcreader@<version>, which must already be on npm.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Tag matches package.json version
+        run: |
+          v=$(node -p 'require("./package.json").version')
+          [ "$GITHUB_REF_NAME" = "v$v" ] || { echo "tag $GITHUB_REF_NAME does not match package.json version $v"; exit 1; }
+      - run: npm ci
+      - run: npm test
+      - name: Publish to npm
+        run: |
+          v=$(node -p 'require("./package.json").version')
+          if npm view "smcreader@$v" version >/dev/null 2>&1; then echo "smcreader@$v is already on npm"; exit 0; fi
+          npm install -g npm@11   # trusted publishing needs npm >= 11.5.1
+          npm publish --provenance --access public
