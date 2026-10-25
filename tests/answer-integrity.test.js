@@ -3,6 +3,7 @@
  *
  * - the per-document question limit holds for a parallel batch;
  * - line numbers of an intercepted Read are FILE line numbers (pointer, peek, lines answer);
+ * - a lines answer with named but unusable ranges says so instead of "not in document";
  */
 'use strict';
 
@@ -88,4 +89,16 @@ describe('intercepted Read keeps file line numbers', () => {
     expect(p).toContain('lines omitted');
     expect(store.peek(idOf(p), 1, 1)).toBe('1\torig line 1');
   });
+});
+
+// Haiku sometimes answers ["12-20"] instead of [12,20] or misses the document: the ranges were
+// dropped silently and the agent read "not in document" — and concluded the thing is absent.
+test('lines answer: named but unusable ranges are reported, not "not in document"', async () => {
+  const r = store.open({ text: FILE.slice(0, 50).join('\n') }, 'ranges');
+  const bad = async () => ({ out: '{"ranges":[["12-20"],[900,950]],"note":"see lines"}', sid: 's' });
+  const ans = await haiku.ask(store, store.get(r.id), 'where?', bad, { format: 'lines' });
+  expect(ans).not.toContain('not in document');
+  expect(ans).toMatch(/the document has no such lines — it has lines 1–50/);
+  const empty = async () => ({ out: '{"ranges":[],"note":"no such thing"}', sid: 's' });
+  expect(await haiku.ask(store, store.get(r.id), 'and this?', empty, { format: 'lines' })).toContain('(no lines given — not in document)');
 });
