@@ -1,6 +1,6 @@
 {
   "name": "smcreader",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "SMC Reader (Save My Context Reader): large tool outputs are spilled to disk and replaced by a short pointer; the model pulls only the lines it needs via reader_ask / reader_peek.",
   "author": { "name": "bulatko" },
   "homepage": "https://github.com/bulatko/SMCReader",

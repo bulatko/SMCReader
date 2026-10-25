@@ -213,6 +213,20 @@ received, not from what it said: (1) the Bash `tool_result` contains `[READER ct
 
 </details>
 
+## What it runs and sends
+
+- **The hook** (`bin/smcreader-hook`, no dependencies, no network) reads the tool output that Claude
+  Code passes to it. If the output is large, the hook writes it to `READER_DIR`
+  (default `~/.cache/smcreader`) and returns the pointer in its place.
+- **The MCP server** comes from the npm registry: the plugin starts it with `npx`
+  (`smcreader@<version>` and its dependencies), and later starts run from npm's cache.
+- **`reader_ask`** sends the document and your question to Claude Haiku through your own Claude
+  Code (`claude`, your credentials), like a subagent would. Those Haiku sessions keep their
+  transcripts under `READER_WORK_DIR`. `reader_open`, `reader_peek`, `reader_list` and
+  `reader_close` run locally.
+- Documents expire 48 h after their last use. There is no telemetry, and nothing else leaves your
+  machine.
+
 ## Limitations
 
 - Needs a Claude Code version that applies `hookSpecificOutput.updatedToolOutput` from command

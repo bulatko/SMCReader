@@ -16,8 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
-      - run: npm ci
+      - run: npm install
       - run: npm test
       # e2e/claude-code.sh and e2e/plugin.sh are NOT run here: they drive a real
       # `claude -p --model haiku` session, which needs an installed Claude Code CLI and a
