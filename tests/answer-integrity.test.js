@@ -4,6 +4,7 @@
  * - the per-document question limit holds for a parallel batch;
  * - line numbers of an intercepted Read are FILE line numbers (pointer, peek, lines answer);
  * - a lines answer with named but unusable ranges says so instead of "not in document";
+ * - a lines answer is capped in bytes too, and a truncated long line is marked as such.
  */
 'use strict';
 
@@ -101,4 +102,15 @@ test('lines answer: named but unusable ranges are reported, not "not in document
   expect(ans).toMatch(/the document has no such lines — it has lines 1–50/);
   const empty = async () => ({ out: '{"ranges":[],"note":"no such thing"}', sid: 's' });
   expect(await haiku.ask(store, store.get(r.id), 'and this?', empty, { format: 'lines' })).toContain('(no lines given — not in document)');
+});
+
+// LINES_CAP capped lines, not bytes: 160 lines of minified JSON flooded the agent's window.
+test('lines answer: capped in bytes too; a long line is shown by its start, marked', async () => {
+  const long = Array.from({ length: 100 }, (_, i) => `${i + 1}:` + 'x'.repeat(3000));
+  const r = store.open({ text: long.join('\n') }, 'long lines');
+  const run = async () => ({ out: '{"ranges":[[1,100]],"note":"all"}', sid: 's' });
+  const ans = await haiku.ask(store, store.get(r.id), 'show', run, { format: 'lines' });
+  expect(Buffer.byteLength(ans)).toBeLessThan(haiku.LINES_BYTES_CAP + 4 * 1024);
+  expect(ans).toContain('[line truncated: ');
+  expect(ans).toMatch(new RegExp(`not shown due to the ${haiku.LINES_CAP}-line or ${haiku.LINES_BYTES_CAP}-byte limit: \\d+-100`));
 });
