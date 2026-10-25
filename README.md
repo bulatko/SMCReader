@@ -230,7 +230,12 @@ received, not from what it said: (1) the Bash `tool_result` contains `[READER ct
 ## Limitations
 
 - Needs a Claude Code version that applies `hookSpecificOutput.updatedToolOutput` from command
-  hooks (verified on 2.1.282). Older versions call the hook but keep the original output.
+  hooks (verified on 2.1.282 and 2.1.310). Older versions call the hook but keep the original output.
+- Claude Code itself saves a `Bash` output above `BASH_MAX_OUTPUT_LENGTH` (30 000 characters by
+  default) to a file and shows the model a preview with the path. SMC Reader leaves such outputs
+  alone, so it covers outputs between `READER_THRESHOLD` and that limit.
+- A failed command (non-zero exit) is not intercepted: Claude Code reports it through
+  `PostToolUseFailure`, which cannot replace the output (Claude Code shortens it itself).
 - Supported output shapes: string, `{stdout,…}` (Bash), `{content:[…]}` (MCP), `{output}`,
   `{file:{content}}` (Read), arrays of content blocks. Unknown shape → passed through untouched.
 - `Read` is not intercepted by default — `Edit` needs exact bytes. Use the read guard instead.

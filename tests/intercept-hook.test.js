@@ -59,6 +59,16 @@ describe('createInterceptHook — gating', () => {
     expect(store.opened).toHaveLength(0);
   });
 
+  test('output Claude Code already saved to a file (persistedOutputPath) passes through untouched', async () => {
+    const store = fakeStore();
+    const hook = createInterceptHook({ store, log: noLog });
+    const tool_response = { stdout: BIG, stderr: '', interrupted: false, isImage: false,
+      persistedOutputPath: '/home/u/.claude/projects/p/s/tool-results/b1.txt', persistedOutputSize: 108894 };
+    const out = await hook({ tool_name: 'Bash', tool_response, tool_input: { command: 'seq 1 20000' } });
+    expect(out).toEqual({});
+    expect(store.opened).toHaveLength(0);
+  });
+
   test('reader tools themselves are never intercepted (no recursion)', async () => {
     const store = fakeStore();
     const hook = createInterceptHook({ store, log: noLog });

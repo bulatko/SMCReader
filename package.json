@@ -1,6 +1,6 @@
 {
   "name": "smcreader",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "SMC Reader (Save My Context Reader): pull-model reading of large tool outputs for Claude Code. A PostToolUse hook spills big outputs to disk and leaves a short pointer; an MCP server returns only the lines or answers the model asks for.",
   "license": "MIT",
   "author": "bulatko",

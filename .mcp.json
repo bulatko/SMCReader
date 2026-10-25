@@ -2,6 +2,6 @@
   "smcreader": {
     "type": "stdio",
     "command": "npx",
-    "args": ["-y", "--omit=optional", "--package=smcreader@0.1.4", "smcreader-mcp"]
+    "args": ["-y", "--omit=optional", "--package=smcreader@0.1.5", "smcreader-mcp"]
   }
 }
